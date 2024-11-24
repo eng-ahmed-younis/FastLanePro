@@ -1,0 +1,168 @@
+# This file contains the fastlane.tools configuration
+# Documentation: https://docs.fastlane.tools
+
+# Uncomment the line below to enable Fastlane auto-update
+# update_fastlane
+
+BUILD_CONFIG_DEBUG = "debug"
+BUILD_CONFIG_RELEASE = "release"
+
+default_platform(:android)
+
+platform :android do
+  #*************************************************************************************************
+  # [ FIREBASE DISTRIBUTION LANES ]
+  #*************************************************************************************************
+  desc "Firebase distribute Debug"
+  lane :firebase_distribute_debug do
+    distribute_firebase(build_type: BUILD_CONFIG_DEBUG)
+  end
+
+  desc "Firebase distribute Release"
+  lane :firebase_distribute_release do
+    distribute_firebase(build_type: BUILD_CONFIG_RELEASE)
+  end
+
+  #*************************************************************************************************
+  # [ BUILD FUNCTION ]
+  #*************************************************************************************************
+  def build(flavor:, build_type:, firebase_app_id:)
+    # Retrieve the latest release from Firebase
+    latest_release = firebase_app_distribution_get_latest_release(
+      app: firebase_app_id,
+      firebase_cli_token: ENV['FIREBASE_CLI_TOKEN']
+    )
+    puts "Fetched latest release: #{latest_release.inspect}"
+
+    if latest_release.nil? || !latest_release.key?(:buildVersion)
+      UI.user_error!("Could not fetch the latest release or :buildVersion is missing.")
+    end
+
+    version_code = latest_release[:buildVersion].to_i + 1
+    puts "Incrementing version code to #{version_code}"
+
+    increment_version_code(
+      gradle_file_path: "app/build.gradle.kts",
+      version_code: version_code
+    )
+
+    gradle(
+      task: "assemble",
+      flavor: flavor,
+      build_type: build_type
+    )
+
+    puts "Build completed for flavor: #{flavor}, build type: #{build_type}."
+  end
+
+  #*************************************************************************************************
+  # [ DISTRIBUTE FIREBASE ]
+  #*************************************************************************************************
+  def distribute_firebase(build_type:)
+    # Fetch flavors from the environment
+    flavors = ENV['FLAVORS']&.split(',') || [ENV['FLAVOR']].compact
+
+    if flavors.empty?
+      UI.user_error!("Environment variable 'FLAVORS' or 'FLAVOR' is not set. Please define one in the environment.")
+    end
+
+    # Validating provided flavors
+    valid_flavors = ["SaraApp", "FoxApp", "MaxApp"]
+    firebase_app_ids = {
+      "SaraApp" => "1:175826017823:android:23c3f0a529fbaf99b4bf2a",
+      "FoxApp" => "1:175826017823:android:18f784ba7b25cc4fb4bf2a",
+      "MaxApp" => "1:175826017823:android:13c08153d956ebceb4bf2a"
+    }
+
+    invalid_flavors = flavors - valid_flavors
+
+    unless invalid_flavors.empty?
+      UI.user_error!("Invalid flavors '#{invalid_flavors.join(', ')}'. Valid flavors are: #{valid_flavors.join(', ')}")
+    end
+
+    # Iterate through each valid flavor and build/distribute
+    flavors.each do |flavor|
+      UI.message("Building and distributing for flavor: #{flavor}")
+
+      # Build the app
+      build(
+        flavor: flavor,
+        build_type: build_type,
+        firebase_app_id: firebase_app_ids[flavor]
+      )
+
+      # Distribute the build via Firebase using the correct app ID for the flavor
+      firebase_app_distribution(
+        app: firebase_app_ids[flavor],
+        firebase_cli_token: ENV['FIREBASE_CLI_TOKEN'],
+        groups: "soso_ahmed, lolo",
+        release_notes: firebase_release_notes,
+        debug: true,
+        upload_timeout: 600 # Set timeout to 10 minutes
+      )
+
+      # Notify Slack
+      slack_new_build(build_type: build_type, flavor: flavor)
+    end
+  end
+
+  #*************************************************************************************************
+  # [ SLACK NOTIFICATIONS ]
+  #*************************************************************************************************
+  def slack_new_build(build_type:, flavor:)
+    @notes = ":rocket: *New Android Build!* \n" \
+             "*App Name:* #{ENV['APP_NAME']}\n" \
+             "*Flavor:* #{flavor}\n" \
+             "*Build Type:* #{build_type}\n" \
+             "*Version:* #{current_version_name} (#{current_version_code})\n" \
+             "*Release Notes:*\n#{release_notes}"
+
+    slack(
+      message: @notes,
+      success: true,
+      slack_url: ENV['SLACK_URL'],
+      payload: {
+        "Release Notes" => release_notes,
+        "Branch Name" => git_branch
+      },
+      default_payloads: [],
+      attachment_properties: {
+        fallback: "New Build notification with image",
+        color: "#36a64f", # Optional color for the attachment border
+        title: "Build Information",
+        text: "Flavor: #{flavor}\nBuild Type: #{build_type}\nVersion: #{current_version_name} (#{current_version_code})",
+        image_url: "https://www.freeiconspng.com/thumbs/android-icon/displaying-18-images-for-android-music-icon-png--27.png", # Image URL
+        footer: "Fastlane CI/CD",
+        ts: Time.now.to_i
+      }
+    )
+  end
+
+  #*************************************************************************************************
+  # [ RELEASE NOTES HELPERS ]
+  #*************************************************************************************************
+  def firebase_release_notes
+    "#{ENV['APP_NAME']}\n\n#{release_notes}"
+  end
+
+  def release_notes
+    File.exist?("./release_notes") ? File.read("./release_notes") : "No release notes provided."
+  end
+
+  #*************************************************************************************************
+  # [ VERSION HELPERS ]
+  #*************************************************************************************************
+  def current_version_name
+    get_version_name(
+      gradle_file_path: "app/build.gradle.kts",
+      ext_constant_name: "versionName"
+    )
+  end
+
+  def current_version_code
+    get_version_code(
+      gradle_file_path: "app/build.gradle.kts",
+      ext_constant_name: "versionCode"
+    )
+  end
+end

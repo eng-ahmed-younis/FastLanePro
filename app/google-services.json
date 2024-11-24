@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "175826017823",
+    "project_id": "fastlane-00",
+    "storage_bucket": "fastlane-00.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:175826017823:android:23c3f0a529fbaf99b4bf2a",
+        "android_client_info": {
+          "package_name": "com.love.fastlanepro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9R_hNOSBXMD1-nr_MWefJSA1VAE0AaTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:175826017823:android:18f784ba7b25cc4fb4bf2a",
+        "android_client_info": {
+          "package_name": "com.love.fastlanepro.fox"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9R_hNOSBXMD1-nr_MWefJSA1VAE0AaTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:175826017823:android:13c08153d956ebceb4bf2a",
+        "android_client_info": {
+          "package_name": "com.love.fastlanepro.max"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9R_hNOSBXMD1-nr_MWefJSA1VAE0AaTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

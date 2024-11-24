@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="fastlane.lanes">
+    
+    
+    
+      
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.0023956">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="1: firebase_app_distribution_get_latest_release" time="2.3499372">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="2: increment_version_code" time="0.0115191">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="3: assembleSaraApprelease" time="5.7580041">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="4: firebase_app_distribution" time="93.4623972">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="5: get_version_name" time="0.0026067">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="6: get_version_code" time="0.0032407">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="7: git_branch" time="0.0409564">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="8: get_version_name" time="0.003418">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="9: get_version_code" time="0.0027752">
+        
+      </testcase>
+    
+  </testsuite>
+</testsuites>
