@@ -13,7 +13,7 @@ android {
         applicationId = "com.love.fastlanepro"
         minSdk = 24
         targetSdk = 34
-        versionCode = 13
+        versionCode = 20
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -52,18 +52,22 @@ android {
     flavorDimensions += listOf("app") // Single dimension for all flavors
 
     productFlavors {
-        create("SaraApp") {
-            dimension = "app" // Assign to "app" dimension
+        create("CoreApp") {
+            dimension = "app"
+            applicationId = "com.love.fastlanepro" // Matches CoreApp in Firebase
         }
         create("FoxApp") {
-            dimension = "app" // Assign to "app" dimension
-            applicationIdSuffix = ".fox" // Optional suffix
+            dimension = "app"
+            applicationId = "com.love.fastlanepro.fox" // Matches FoxApp in Firebase
+            versionName = "1.6.fox"
         }
         create("MaxApp") {
-            dimension = "app" // Assign to "app" dimension
-            applicationIdSuffix = ".max" // Optional suffix
+            dimension = "app"
+            applicationId = "com.love.fastlanepro.max" // Matches MaxApp in Firebase
+            versionName = "1.4.max"
         }
     }
+
 
 
 

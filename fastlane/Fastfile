@@ -32,47 +32,47 @@ platform :android do
       app: firebase_app_id,
       firebase_cli_token: ENV['FIREBASE_CLI_TOKEN']
     )
-    puts "Fetched latest release: #{latest_release.inspect}"
 
-    if latest_release.nil? || !latest_release.key?(:buildVersion)
-      UI.user_error!("Could not fetch the latest release or :buildVersion is missing.")
+    if latest_release && latest_release.key?(:buildVersion)
+      version_code = latest_release[:buildVersion].to_i + 1
+      UI.message("Incrementing version code to #{version_code}")
+
+      increment_version_code(
+        gradle_file_path: "app/build.gradle.kts",
+        version_code: version_code
+      )
+    else
+      UI.message("Could not fetch the latest release or :buildVersion. Skipping version code increment.")
     end
 
-    version_code = latest_release[:buildVersion].to_i + 1
-    puts "Incrementing version code to #{version_code}"
-
-    increment_version_code(
-      gradle_file_path: "app/build.gradle.kts",
-      version_code: version_code
-    )
-
+    # Build the APK or AAB
     gradle(
       task: "assemble",
       flavor: flavor,
       build_type: build_type
     )
-
-    puts "Build completed for flavor: #{flavor}, build type: #{build_type}."
+    UI.message("Build completed for flavor: #{flavor}, build type: #{build_type}.")
   end
 
   #*************************************************************************************************
   # [ DISTRIBUTE FIREBASE ]
   #*************************************************************************************************
   def distribute_firebase(build_type:)
-    # Fetch flavors from the environment
+    # Fetch flavors from the environment variables
     flavors = ENV['FLAVORS']&.split(',') || [ENV['FLAVOR']].compact
 
     if flavors.empty?
       UI.user_error!("Environment variable 'FLAVORS' or 'FLAVOR' is not set. Please define one in the environment.")
     end
 
-    # Validating provided flavors
-    valid_flavors = ["SaraApp", "FoxApp", "MaxApp"]
+    # Firebase App IDs for each flavor
     firebase_app_ids = {
-      "SaraApp" => "1:175826017823:android:23c3f0a529fbaf99b4bf2a",
-      "FoxApp" => "1:175826017823:android:18f784ba7b25cc4fb4bf2a",
-      "MaxApp" => "1:175826017823:android:13c08153d956ebceb4bf2a"
+      "CoreApp" => "1:175826017823:android:23c3f0a529fbaf99b4bf2a", # CoreApp: com.love.fastlanepro
+      "FoxApp" => "1:175826017823:android:18f784ba7b25cc4fb4bf2a",  # FoxApp: com.love.fastlanepro.fox
+      "MaxApp" => "1:175826017823:android:13c08153d956ebceb4bf2a"   # MaxApp: com.love.fastlanepro.max
     }
+
+    valid_flavors = firebase_app_ids.keys
 
     invalid_flavors = flavors - valid_flavors
 
@@ -91,12 +91,12 @@ platform :android do
         firebase_app_id: firebase_app_ids[flavor]
       )
 
-      # Distribute the build via Firebase using the correct app ID for the flavor
+      # Distribute via Firebase
       firebase_app_distribution(
         app: firebase_app_ids[flavor],
         firebase_cli_token: ENV['FIREBASE_CLI_TOKEN'],
-        groups: "soso_ahmed, lolo",
-        release_notes: firebase_release_notes,
+        groups: "dev-group, testing-group",
+        release_notes: firebase_release_notes(flavor: flavor),
         debug: true,
         upload_timeout: 600 # Set timeout to 10 minutes
       )
@@ -110,15 +110,15 @@ platform :android do
   # [ SLACK NOTIFICATIONS ]
   #*************************************************************************************************
   def slack_new_build(build_type:, flavor:)
-    @notes = ":rocket: *New Android Build!* \n" \
-             "*App Name:* #{ENV['APP_NAME']}\n" \
-             "*Flavor:* #{flavor}\n" \
-             "*Build Type:* #{build_type}\n" \
-             "*Version:* #{current_version_name} (#{current_version_code})\n" \
-             "*Release Notes:*\n#{release_notes}"
+    notes = ":rocket: *New Android Build!* \n" \
+            "*App Name:* #{ENV['APP_NAME']}\n" \
+            "*Flavor:* #{flavor}\n" \
+            "*Build Type:* #{build_type}\n" \
+            "*Version:* #{current_version_name} (#{current_version_code})\n" \
+          #  "*Release Notes:*\n#{release_notes}"
 
     slack(
-      message: @notes,
+      message: notes,
       success: true,
       slack_url: ENV['SLACK_URL'],
       payload: {
@@ -127,12 +127,16 @@ platform :android do
       },
       default_payloads: [],
       attachment_properties: {
-        fallback: "New Build notification with image",
-        color: "#36a64f", # Optional color for the attachment border
-        title: "Build Information",
-        text: "Flavor: #{flavor}\nBuild Type: #{build_type}\nVersion: #{current_version_name} (#{current_version_code})",
-        image_url: "https://www.freeiconspng.com/thumbs/android-icon/displaying-18-images-for-android-music-icon-png--27.png", # Image URL
+        fallback: "New Build notification",
+        author_name: "Ahmed Aly",
+        author_link: "https://github.com/eng-ahmed-younis",
+        author_icon: "https://yt3.googleusercontent.com/Z497e8KyOPp-YwpldzDQ0Th2DbUOkKvIuLqbRY1WImt-mqFTfSMFYcoNshI5pzFZGANWuZGfckQ=s900-c-k-c0x00ffffff-no-rj",
+        color: "#36a64f",
+       # title: "Build Information",
+      #  text: "Flavor: #{flavor}\nBuild Type: #{build_type}\nVersion: #{current_version_name} (#{current_version_code})",
         footer: "Fastlane CI/CD",
+        thumb_url: "http://placekitten.com/g/200/200",
+        footer_icon: "https://platform.slack-edge.com/img/default_application_icon.png",
         ts: Time.now.to_i
       }
     )
@@ -141,8 +145,8 @@ platform :android do
   #*************************************************************************************************
   # [ RELEASE NOTES HELPERS ]
   #*************************************************************************************************
-  def firebase_release_notes
-    "#{ENV['APP_NAME']}\n\n#{release_notes}"
+  def firebase_release_notes(flavor:)
+    "#{ENV['APP_NAME']} - #{flavor}\n\n#{release_notes}"
   end
 
   def release_notes
